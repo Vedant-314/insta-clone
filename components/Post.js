@@ -50,13 +50,13 @@ export default function Post({ img, userImg, username, id, caption }) {
 
   useEffect(()=>{
     setHasLiked(
-      likes.findIndex(like=>like.id === session.user.uid) !== -1
+      likes.findIndex(like=>like.id === session?.user?.uid) !== -1
     )
   },[likes])
   async function sendComment(e) {
     e.preventDefault();
     const commentToSend = comment;
-    setComment("");
+    setComment(""); 
     await addDoc(collection(db, "posts", id, "comments"), {
       comment: commentToSend,
       username: session.user.username,
