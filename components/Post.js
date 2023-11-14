@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Moment from "react-moment";
-import { useSession } from "next-auth/react";
 
 import {
   EllipsisHorizontalIcon,
@@ -22,9 +21,10 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
+import { useRecoilState } from "recoil";
+import { userState } from "@/atom/userAtom";
 export default function Post({ img, userImg, username, id, caption }) {
-
-  const { data: session } = useSession();
+  const [currentUser] = useRecoilState(userState)
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState("");
   const [hasLiked, setHasLiked] = useState(false);
@@ -50,7 +50,7 @@ export default function Post({ img, userImg, username, id, caption }) {
 
   useEffect(()=>{
     setHasLiked(
-      likes.findIndex(like=>like.id === session?.user?.uid) !== -1
+      likes.findIndex(like=>like.id === currentUser?.uid) !== -1
     )
   },[likes])
   async function sendComment(e) {
@@ -59,18 +59,18 @@ export default function Post({ img, userImg, username, id, caption }) {
     setComment(""); 
     await addDoc(collection(db, "posts", id, "comments"), {
       comment: commentToSend,
-      username: session.user.username,
-      userImage: session.user.image,
+      username: currentUser?.username,
+      userImage: currentUser?.userImg,
       timestamp: serverTimestamp(),
     });
   }
 
   async function likedPost(){
     if(hasLiked){
-      await deleteDoc(doc(db, "posts", id, "likes", session.user.uid))
+      await deleteDoc(doc(db, "posts", id, "likes", currentUser.uid))
     }else{
-      await setDoc(doc(db, "posts", id, "likes", session.user.uid),{
-        username:session.user.username
+      await setDoc(doc(db, "posts", id, "likes", currentUser.uid),{
+        username:currentUser.username
       })
     }
   }
@@ -92,7 +92,7 @@ export default function Post({ img, userImg, username, id, caption }) {
       <img className="object-cover w-full" src={img} alt="" />
 
       {/* Buttons */}
-      {session && (
+      {currentUser && (
         <div className="flex justify-between px-4 pt-4">
           <div className="flex space-x-4">
             {hasLiked ? (
@@ -131,7 +131,7 @@ export default function Post({ img, userImg, username, id, caption }) {
           ))}
         </div>
       )}
-      {session && (
+      {currentUser && (
         <form action="" className="flex items-center p-4">
           <FaceSmileIcon className="h-7 " />
           <input

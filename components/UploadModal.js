@@ -5,9 +5,8 @@ import { CameraIcon } from "@heroicons/react/24/outline";
 import { useRef, useState } from "react";
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db, storage } from "@/firebase";
-import { useSession } from "next-auth/react";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
-import { async } from "@firebase/util";
+import { userState } from "@/atom/userAtom";
 
 export default function UploadModal() {
   const [open, setOpen] = useRecoilState(modalState);
@@ -15,16 +14,15 @@ export default function UploadModal() {
   const filePickerRef = useRef(null);
   const captionRef = useRef(null);
   const [loading, setLoading] = useState(false)
-  const {data:session} = useSession();
-
+  const [currentUser] = useRecoilState(userState)
   async function uploadPost(){
     if(loading) return;
 
     setLoading(true);
     const docRef = await addDoc(collection(db, "posts"),{
       caption: captionRef.current.value,
-      username: session.user.username,
-      profileImg: session.user.image,
+      username: currentUser?.username,
+      profileImg: currentUser?.userImg,
       timestamp: serverTimestamp(),
     });
 

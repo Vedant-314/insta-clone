@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
-import { useSession, signIn, signOut } from "next-auth/react";
+
 import { MagnifyingGlassIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 import mainImage from '../assets/icon.jpg'
 import { useRecoilState } from "recoil";
@@ -8,11 +8,38 @@ import { modalState } from "@/atom/modalAtom";
 
 import {HomeIcon} from "@heroicons/react/24/solid"
 import { useRouter } from "next/router";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { userState } from "@/atom/userAtom";
+import { db } from "@/firebase";
 
 export default function Header() {
   const router = useRouter();
-  const {data: session} = useSession()
   const [open, setOpen] = useRecoilState(modalState)
+  const [currentUser, setCurrentUser] = useRecoilState(userState)
+
+  const auth = getAuth()
+  useEffect(()=>{
+    const uid = auth.currentUser?.providerData[0].uid;
+    onAuthStateChanged(auth, (user)=>{
+      if(user){
+        const fetchUser = async()=>{
+          const docRef = doc(db, "users", user.auth.currentUser.providerData[0].uid);
+          const docSnap = await getDoc(docRef);
+          if(docSnap.exists()){
+            setCurrentUser(docSnap.data());
+            console.log(currentUser)
+          }
+        };
+        fetchUser();
+      }
+    })
+  },[])
+
+  function onSignOut(){
+    signOut(auth)
+    setCurrentUser(null)
+  }
   return (
     <div className="shadow-sm  border-b sticky top-0 bg-white z-30">
 
@@ -44,13 +71,13 @@ export default function Header() {
       {/* Righ Side */}
       <div className="flex space-x-4 items-center">
         <HomeIcon onClick={()=>router.push('/')} className="hidden md:inline-flex h-6 cursor-pointer hover:scale-125 transition-transform duration-200 ease-out"/>
-        {session ? (
+        {currentUser ? (
           <>
           <PlusCircleIcon onClick={()=>setOpen(true)} className="h-6 cursor-pointer hover:scale-125 transition-transform duration-200 ease-out"/>
-          <img onClick={signOut} src={session.user.image} className="h-10 rounded-full cursor-pointer" />
+          <img onClick={onSignOut} src={currentUser?.userImg} className="h-10 rounded-full cursor-pointer" />
           </>
         ):(
-          <button onClick={signIn}>Sign in</button>
+          <button onClick={()=>router.push("/auth/signin")}>Sign in</button>
         )}
       </div>
     </div> 
